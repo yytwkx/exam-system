@@ -1,0 +1,101 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>题库管理</title>
+    <script src="js/offline-loader.js"></script>
+    <script>
+        LocalLibLoader.loadScript('libs/tailwindcss.min.js','https://cdn.tailwindcss.com');
+        LocalLibLoader.loadStyle('libs/font-awesome.min.css','https://cdn.jsdelivr.net/npm/font-awesome@4.7.0/css/font-awesome.min.css');
+        LocalLibLoader.loadScript('libs/xlsx.full.min.js','https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js');
+    </script>
+    <!-- 自定义样式 -->
+    <link rel="stylesheet" href="css/styles.css">
+</head>
+<body class="bg-gray-100 min-h-screen">
+    <!-- 导航栏 -->
+    <nav class="bg-blue-600 text-white p-4 shadow-lg">
+        <div class="container mx-auto flex justify-between items-center">
+            <div class="flex items-center space-x-2">
+                <i class="fa fa-book text-2xl"></i>
+                <h1 class="text-xl font-bold">本地独立刷题系统 - 题库管理</h1>
+            </div>
+            <div class="flex space-x-4">
+                <button id="backToHome" class="bg-gray-500 hover:bg-gray-600 text-white px-3 py-2 rounded flex items-center">
+                    <i class="fa fa-home mr-2"></i>返回首页
+                </button>
+            </div>
+        </div>
+    </nav>
+
+    <!-- 主要内容区域 -->
+    <main class="container mx-auto p-4">
+        <!-- 导入功能区域 -->
+        <div class="bg-white rounded-lg shadow-md p-6 mb-4">
+            <h3 class="text-xl font-bold mb-3">
+                <i class="fa fa-upload mr-2"></i>导入题库
+            </h3>
+            <div class="flex flex-wrap items-center space-x-4">
+                <input type="file" id="importFile" accept=".csv, .json" class="hidden">
+                <label for="importFile" class="bg-blue-500 hover:bg-blue-600 text-white px-6 py-3 rounded-lg shadow flex items-center cursor-pointer">
+                    <i class="fa fa-file-import mr-2"></i>选择文件
+                </label>
+                <div class="flex items-center space-x-2">
+                    <select id="importType" class="border rounded px-4 py-2">
+                        <option value="exam">考试模式</option>
+                        <option value="learning">学习模式</option>
+                    </select>
+                    <button id="startImport" class="bg-green-500 hover:bg-green-600 text-white px-4 py-3 rounded-lg shadow">
+                        <i class="fa fa-check mr-2"></i>开始导入
+                    </button>
+                </div>
+                <div id="importProgress" class="ml-4 text-sm hidden">
+                    <i class="fa fa-spinner fa-spin mr-1"></i>
+                    <span>导入中...</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- 题库列表区域 -->
+        <div class="bg-white rounded-lg shadow-md p-6 mb-4">
+            <h3 class="text-xl font-bold mb-3">
+                <i class="fa fa-list-ul mr-2"></i>题库列表
+            </h3>
+            <div id="questionBankList" class="space-y-3">
+                <!-- 题库列表项将动态生成 -->
+            </div>
+        </div>
+
+
+        <!-- 导出确认模态框 -->
+        <div id="exportConfirmModal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center hidden">
+            <div class="bg-white rounded-lg p-8 max-w-md">
+                <h3 class="text-xl font-bold mb-4">确认导出</h3>
+                <p class="mb-6">您确定要导出该题库吗？</p>
+                <div class="flex justify-end space-x-4">
+                    <button id="cancelExport" class="bg-gray-500 hover:bg-gray-600 text-white px-4 py-2 rounded">取消</button>
+                    <button id="confirmExport" class="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded">确认导出</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- 删除确认模态框 -->
+        <div id="deleteConfirmModal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center hidden">
+            <div class="bg-white rounded-lg p-8 max-w-md">
+                <h3 class="text-xl font-bold mb-4">确认删除</h3>
+                <p class="mb-6">您确定要删除该题库吗？此操作不可撤销。</p>
+                <div class="flex justify-end space-x-4">
+                    <button id="cancelDelete" class="bg-gray-500 hover:bg-gray-600 text-white px-4 py-2 rounded">取消</button>
+                    <button id="confirmDelete" class="bg-red-500 hover:bg-red-600 text-white px-4 py-2 rounded">确认删除</button>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <!-- JavaScript 文件 -->
+    <script src="js/storageManager.js"></script>
+    <script src="js/importManager.js"></script>
+    <script src="js/manage.js"></script>
+</body>
+</html>

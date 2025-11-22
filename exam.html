@@ -1,0 +1,268 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>模拟考试</title>
+    <script src="js/offline-loader.js"></script>
+    <script>
+        LocalLibLoader.loadScript('libs/tailwindcss.min.js','https://cdn.tailwindcss.com');
+        LocalLibLoader.loadStyle('libs/font-awesome.min.css','https://cdn.jsdelivr.net/npm/font-awesome@4.7.0/css/font-awesome.min.css');
+    </script>
+    <!-- 自定义样式 -->
+    <link rel="stylesheet" href="css/styles.css">
+</head>
+<body class="bg-gray-100 min-h-screen">
+    <!-- 导航栏 -->
+    <nav class="bg-blue-600 text-white p-4 shadow-lg">
+        <div class="container mx-auto flex justify-between items-center">
+            <div class="flex items-center space-x-2">
+                <i class="fa fa-book text-2xl"></i>
+                <h1 class="text-xl font-bold">本地独立刷题系统 - 模拟考试</h1>
+            </div>
+            <div id="examTimer" class="flex items-center">
+                <i class="fa fa-clock-o mr-2"></i>
+                <span id="timerDisplay">00:00:00</span>
+            </div>
+        </div>
+    </nav>
+
+    <!-- 主要内容区域 -->
+    <main class="container mx-auto p-4">
+        <div class="flex flex-col lg:flex-row gap-6">
+            <!-- 左侧导航区域 -->
+            <aside class="lg:w-1/3 space-y-4 order-2 lg:order-1">
+                <div class="bg-white rounded-lg shadow-md p-6">
+                    <h3 class="text-xl font-bold mb-4 flex items-center">
+                        <i class="fa fa-list-ul mr-2"></i>题目导航
+                    </h3>
+                    
+                    <!-- 进度条 -->
+                    <div class="mb-4">
+                        <div class="flex justify-between text-sm text-gray-600 mb-1">
+                            <span>进度</span>
+                            <span id="progressText">0%</span>
+                        </div>
+                        <div class="w-full bg-gray-200 rounded-full h-2">
+                            <div id="progressBar" class="bg-blue-600 h-2 rounded-full transition-all duration-300" style="width: 0%"></div>
+                        </div>
+                    </div>
+                    
+                    <!-- 快速跳转 -->
+                    <div class="mb-4 flex items-center space-x-2">
+                        <span class="text-sm text-gray-600">快速跳转：</span>
+                        <input type="number" id="jumpToQuestion" min="1" class="w-20 px-2 py-1 border rounded" placeholder="题号">
+                        <button id="jumpButton" class="bg-blue-500 hover:bg-blue-600 text-white px-4 py-1 rounded">
+                            跳转
+                        </button>
+                    </div>
+                    
+                    <!-- 题型筛选 -->
+                    <div class="mb-4 flex flex-wrap gap-2">
+                        <button class="questionTypeFilter px-3 py-1 rounded bg-blue-500 text-white text-sm" data-type="all">全部</button>
+                        <button class="questionTypeFilter px-3 py-1 rounded bg-gray-200 text-gray-700 hover:bg-gray-300 text-sm" data-type="single">单选</button>
+                        <button class="questionTypeFilter px-3 py-1 rounded bg-gray-200 text-gray-700 hover:bg-gray-300 text-sm" data-type="multiple">多选</button>
+                        <button class="questionTypeFilter px-3 py-1 rounded bg-gray-200 text-gray-700 hover:bg-gray-300 text-sm" data-type="judge">判断</button>
+                    </div>
+                    
+                    <!-- 题目列表 -->
+                    <div id="questionListContainer" class="grid gap-1 overflow-y-auto p-2 border rounded" style="grid-template-columns: repeat(10, minmax(0, 1fr)); max-height: 200px;">
+                        <!-- 题目列表项将动态生成 -->
+                    </div>
+                    
+                    <!-- 图例说明 -->
+                    <div class="mt-4 pt-4 border-t border-gray-200 text-xs text-gray-600">
+                        <!-- 第一行：考试中的状态（包含当前题） -->
+                        <div class="flex flex-wrap gap-4 mb-2">
+                            <div class="flex items-center">
+                                <span class="w-4 h-4 bg-indigo-500 rounded inline-block mr-1 flex-shrink-0"></span>
+                                <span>当前题</span>
+                            </div>
+                            <div class="flex items-center">
+                                <span class="w-4 h-4 bg-gray-200 rounded inline-block mr-1 flex-shrink-0"></span>
+                                <span>未作答</span>
+                            </div>
+                            <div class="flex items-center">
+                                <span class="w-4 h-4 bg-blue-500 rounded inline-block mr-1 flex-shrink-0"></span>
+                                <span>已作答</span>
+                            </div>
+                            <div class="flex items-center">
+                                <span class="w-4 h-4 bg-yellow-400 rounded inline-block mr-1 flex-shrink-0"></span>
+                                <span>已标记</span>
+                            </div>
+                        </div>
+                        <!-- 第二行：交卷后的结果（与第一行对齐） -->
+                        <div id="examResultLegend" class="hidden flex flex-wrap gap-4">
+                            <div class="flex items-center">
+                                <span class="w-4 h-4 bg-green-500 rounded inline-block mr-1 flex-shrink-0"></span>
+                                <span>正确&nbsp;</span>
+                            </div>
+                            <div class="flex items-center">
+                                <span class="w-4 h-4 bg-red-500 rounded inline-block mr-1 flex-shrink-0"></span>
+                                <span>错误</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 考试结果区域 -->
+                <div id="examResult" class="hidden bg-white rounded-lg shadow-md p-6">
+                    <h2 class="text-xl font-bold mb-4">考试结果</h2>
+                    <div class="space-y-4">
+                        <div>
+                            <p class="text-lg font-semibold">得分</p>
+                            <p class="text-3xl font-bold text-green-600"><span id="finalScore">0</span> 分</p>
+                        </div>
+                        <div>
+                            <p class="text-lg font-semibold">正确率</p>
+                            <p class="text-3xl font-bold text-blue-600"><span id="accuracy">0%</span></p>
+                        </div>
+                    </div>
+                    <div class="mt-6 flex flex-col gap-3">
+                        <button id="reviewAnswers" class="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded w-full">
+                            <i class="fa fa-eye mr-2"></i>查看答案
+                        </button>
+                        <button id="restartExam" class="bg-green-500 hover:bg-green-600 text-white px-4 py-2 rounded w-full">
+                            <i class="fa fa-refresh mr-2"></i>重新考试
+                        </button>
+                        <button id="returnToHome" class="bg-gray-500 hover:bg-gray-600 text-white px-4 py-2 rounded w-full">
+                            <i class="fa fa-home mr-2"></i>返回首页
+                        </button>
+                    </div>
+                </div>
+            </aside>
+
+            <!-- 右侧答题区域 -->
+            <section class="lg:flex-1 space-y-4 order-1 lg:order-2">
+                <!-- 顶部信息栏 -->
+                <div class="bg-white rounded-lg shadow-md p-4">
+                    <div class="flex flex-wrap justify-between items-center gap-4">
+                        <div>
+                            <h2 id="examTitle" class="text-2xl font-bold mb-2">模拟考试</h2>
+                            <p id="candidateNameDisplay" class="text-lg font-semibold text-gray-800">考生：--</p>
+                        </div>
+                        <div class="flex items-center gap-2">
+                            <button id="prevQuestion" class="bg-gray-500 hover:bg-gray-600 text-white px-3 py-2 rounded">
+                                <i class="fa fa-arrow-left"></i>
+                            </button>
+                            <button id="nextQuestion" class="bg-gray-500 hover:bg-gray-600 text-white px-3 py-2 rounded">
+                                <i class="fa fa-arrow-right"></i>
+                            </button>
+                            <button id="submitExam" class="bg-green-500 hover:bg-green-600 text-white px-3 py-2 rounded">
+                                <i class="fa fa-check"></i> 交卷
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 题目内容区域 -->
+                <div class="bg-white rounded-lg shadow-md p-6">
+                    <div class="flex flex-wrap justify-between items-center mb-4 gap-4">
+                        <div class="flex items-center gap-3">
+                            <span id="currentQuestionInfo" class="text-sm text-gray-600">第 1/100 题</span>
+                            <span id="questionTypeInfo" class="px-2 py-1 bg-blue-100 text-blue-800 rounded text-sm">单选题</span>
+                            <span id="questionScoreInfo" class="px-2 py-1 bg-green-100 text-green-800 rounded text-sm">1分</span>
+                        </div>
+                        <div class="flex items-center gap-3">
+                            <span id="remainingTime" class="text-red-600 font-bold">剩余时间: 00:00:00</span>
+                            <button id="markQuestion" class="bg-yellow-500 hover:bg-yellow-600 text-white px-3 py-1 rounded text-sm flex items-center gap-2">
+                                <i class="fa fa-flag"></i>标记
+                            </button>
+                        </div>
+                    </div>
+
+                    <div id="questionContent" class="mb-6">
+                        <!-- 题目内容将动态生成 -->
+                    </div>
+
+                    <div id="optionsArea" class="mb-6">
+                        <!-- 选项将动态生成 -->
+                    </div>
+                    
+                    <!-- 答案对比区域（交卷后显示） -->
+                    <div id="answerComparison" class="mb-6 hidden">
+                        <!-- 答案对比内容将动态生成 -->
+                    </div>
+
+                    <div class="flex flex-wrap justify-between gap-3">
+                        <button id="backToExamList" class="bg-gray-500 hover:bg-gray-600 text-white px-4 py-2 rounded">
+                            <i class="fa fa-arrow-left mr-2"></i> 返回列表
+                        </button>
+                        <div class="flex gap-2">
+                            <button id="prevQuestionBtn" class="bg-gray-500 hover:bg-gray-600 text-white px-4 py-2 rounded">
+                                <i class="fa fa-arrow-left mr-2"></i> 上一题
+                            </button>
+                            <button id="nextQuestionBtn" class="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded">
+                                下一题 <i class="fa fa-arrow-right ml-2"></i>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </section>
+        </div>
+
+        <!-- 提交确认模态框 -->
+        <div id="submitConfirmModal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center hidden">
+            <div class="bg-white rounded-lg p-8 max-w-md">
+                <h3 class="text-xl font-bold mb-4">确认交卷</h3>
+                <p class="mb-6">您确定要提交考试吗？未完成的题目将被视为未作答。</p>
+                <div class="flex justify-end space-x-4">
+                    <button id="cancelSubmit" class="bg-gray-500 hover:bg-gray-600 text-white px-4 py-2 rounded">取消</button>
+                    <button id="confirmSubmit" class="bg-red-500 hover:bg-red-600 text-white px-4 py-2 rounded">确认提交</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- 考试结果页面 -->
+        <div id="examResult" class="hidden container mx-auto p-4">
+            <div class="bg-white rounded-lg shadow-md p-6">
+                <h2 class="text-2xl font-bold mb-4">考试结果</h2>
+                <div class="flex justify-between items-center mb-6">
+                    <div>
+                        <p class="text-xl">得分: <span id="finalScore" class="text-2xl font-bold text-green-600">0</span>/100</p>
+                        <p class="text-lg">正确率: <span id="accuracy" class="font-bold">0%</span></p>
+                    </div>
+                    <div class="mt-6">
+                        <button id="reviewAnswers" class="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded mr-2">
+                            <i class="fa fa-eye mr-2"></i>查看答案
+                        </button>
+                        <button id="restartExam" class="bg-green-500 hover:bg-green-600 text-white px-4 py-2 rounded mr-2">
+                            <i class="fa fa-refresh mr-2"></i>重新考试
+                        </button>
+                        <button id="returnToHome" class="bg-gray-500 hover:bg-gray-600 text-white px-4 py-2 rounded">
+                            <i class="fa fa-home mr-2"></i>返回首页
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 提交确认模态框 -->
+        <div id="submitConfirmModal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center hidden">
+            <div class="bg-white rounded-lg p-8 max-w-md w-full mx-4">
+                <h3 class="text-xl font-bold mb-4">确认交卷</h3>
+                <p class="mb-6">您确定要提交考试吗？未完成的题目将被视为未作答。</p>
+                <div class="flex justify-end space-x-4">
+                    <button id="cancelSubmit" class="bg-gray-500 hover:bg-gray-600 text-white px-4 py-2 rounded">取消</button>
+                    <button id="confirmSubmit" class="bg-red-500 hover:bg-red-600 text-white px-4 py-2 rounded">确认提交</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- 成绩提示模态框 -->
+        <div id="scoreModal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center hidden">
+            <div class="bg-white rounded-lg p-8 max-w-md w-full mx-4 text-center space-y-4">
+                <h3 id="scoreModalTitle" class="text-2xl font-bold text-gray-800">-- 考试完成！</h3>
+                <p id="scoreModalScore" class="text-3xl font-bold text-blue-600">您的得分：0 分</p>
+                <button id="scoreModalClose" class="bg-blue-500 hover:bg-blue-600 text-white px-6 py-2 rounded">好的</button>
+            </div>
+        </div>
+    </main>
+
+    <!-- JavaScript 文件 -->
+    <script src="js/storageManager.js"></script>
+    <script src="js/question.js"></script>
+    <script src="js/examManager.js"></script>
+    <script src="js/main.js"></script>
+</body>
+</html>

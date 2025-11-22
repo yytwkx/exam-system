@@ -1,0 +1,336 @@
+/* 自定义样式 */
+
+/* 通用样式 */
+body {
+    font-family: 'SimSun', '宋体', serif;
+}
+
+* {
+    font-family: 'SimSun', '宋体', serif;
+}
+
+/* 按钮动画 */
+button {
+    transition: all 0.3s ease;
+}
+
+button:hover {
+    transform: translateY(-1px);
+}
+
+button:active {
+    transform: translateY(0);
+}
+
+/* 题目选项样式 */
+.option {
+    display: flex;
+    align-items: center;
+    padding: 12px;
+    border: 1px solid #e5e7eb;
+    border-radius: 6px;
+    margin-bottom: 10px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.option:hover {
+    background-color: #f9fafb;
+    border-color: #d1d5db;
+}
+
+.option.selected {
+    border-color: #3b82f6;
+    background-color: #eff6ff;
+}
+
+.option.correct {
+    border-color: #10b981;
+    background-color: #d1fae5;
+}
+
+.option.incorrect {
+    border-color: #ef4444;
+    background-color: #fee2e2;
+}
+
+.option.disabled {
+    cursor: not-allowed;
+    opacity: 0.7;
+}
+
+.option-label {
+    margin-right: 10px;
+    width: 24px;
+    height: 24px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 50%;
+    font-weight: bold;
+    color: #374151;
+}
+
+.option.selected .option-label {
+    background-color: #3b82f6;
+    color: white;
+}
+
+.option.correct .option-label {
+    background-color: #10b981;
+    color: white;
+}
+
+.option.incorrect .option-label {
+    background-color: #ef4444;
+    color: white;
+}
+
+/* 题目导航样式 */
+.question-nav-btn {
+    width: 32px;
+    height: 32px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border: 1px solid #e5e7eb;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 12px;
+    font-weight: bold;
+    transition: all 0.2s ease;
+    background-color: #fff;
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
+}
+
+.question-nav-btn.bg-gray-200 {
+    background-color: #f3f4f6;
+    border-color: #d1d5db;
+}
+
+.question-nav-btn.bg-blue-200 {
+    background-color: #bfdbfe;
+    border-color: #3b82f6;
+}
+
+.question-nav-btn.bg-green-200 {
+    background-color: #bbf7d0;
+    border-color: #10b981;
+}
+
+.question-nav-btn.bg-yellow-200 {
+    background-color: #fef3c7;
+    border-color: #f59e0b;
+}
+
+.question-nav-btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
+}
+
+.question-nav-btn:active {
+    transform: translateY(0);
+}
+
+.question-nav-btn.disabled {
+    cursor: not-allowed;
+    opacity: 0.6;
+}
+
+.question-nav-btn:hover {
+    background-color: #f9fafb;
+    border-color: #d1d5db;
+}
+
+.question-nav-btn.active {
+    background-color: #3b82f6;
+    color: white;
+    border-color: #3b82f6;
+}
+
+.question-nav-btn.answered {
+    background-color: #d1fae5;
+    border-color: #10b981;
+    color: #065f46;
+}
+
+.question-nav-btn.wrong {
+    background-color: #fee2e2;
+    border-color: #ef4444;
+    color: #991b1b;
+}
+
+/* 进度条动画 */
+#progressBar {
+    transition: width 0.3s ease;
+}
+
+/* 淡入淡出动画 */
+.page {
+    animation: fadeIn 0.5s ease;
+}
+
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+        transform: translateY(10px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+/* 响应式调整 */
+@media (max-width: 640px) {
+    .grid-cols-3 {
+        grid-template-columns: 1fr;
+    }
+    
+    .question-nav-btn {
+        width: 24px;
+        height: 24px;
+        font-size: 10px;
+    }
+    
+    .flex.justify-between {
+        flex-direction: column;
+        gap: 10px;
+    }
+    
+    .flex.justify-between button {
+        width: 100%;
+    }
+}
+
+/* 导入对话框样式 */
+#importModal input[type="file"] {
+    border: 1px solid #e5e7eb;
+    border-radius: 6px;
+    padding: 8px;
+}
+
+/* 题目类型标签 */
+.question-type-tag {
+    display: inline-block;
+    padding: 2px 8px;
+    border-radius: 4px;
+    font-size: 12px;
+    font-weight: 500;
+    margin-right: 8px;
+}
+
+.question-type-single {
+    background-color: #dbeafe;
+    color: #1e40af;
+}
+
+.question-type-multiple {
+    background-color: #e0e7ff;
+    color: #4338ca;
+}
+
+.question-type-judge {
+    background-color: #fef3c7;
+    color: #92400e;
+}
+
+/* 滚动条样式 */
+::-webkit-scrollbar {
+    width: 8px;
+}
+
+::-webkit-scrollbar-track {
+    background: #f1f1f1;
+}
+
+::-webkit-scrollbar-thumb {
+    background: #c1c1c1;
+    border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+    background: #a8a8a8;
+}
+
+/* 错题列表样式 */
+.wrong-question-item {
+    border: 1px solid #fee2e2;
+    border-radius: 6px;
+    padding: 16px;
+    margin-bottom: 12px;
+    background-color: #fef2f2;
+}
+
+.wrong-question-item .question-number {
+    font-weight: bold;
+    color: #ef4444;
+    margin-bottom: 8px;
+}
+
+.wrong-question-item .question-content {
+    margin-bottom: 12px;
+    line-height: 1.6;
+}
+
+.wrong-question-item .your-answer {
+    color: #991b1b;
+    font-weight: 500;
+    margin-bottom: 4px;
+}
+
+.wrong-question-item .correct-answer {
+    color: #065f46;
+    font-weight: 500;
+    margin-bottom: 8px;
+}
+
+/* 题库列表样式 */
+.question-bank-item {
+    border: 1px solid #e5e7eb;
+    border-radius: 8px;
+    padding: 16px;
+    margin-bottom: 12px;
+    transition: all 0.3s ease;
+}
+
+.question-bank-item:hover {
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+    border-color: #d1d5db;
+}
+
+.question-bank-item .bank-name {
+    font-size: 18px;
+    font-weight: bold;
+    margin-bottom: 8px;
+    color: #1f2937;
+}
+
+.question-bank-item .bank-info {
+    color: #6b7280;
+    font-size: 14px;
+    margin-bottom: 12px;
+}
+
+.question-bank-item .bank-actions {
+    display: flex;
+    gap: 8px;
+}
+
+/* 输入框焦点样式 */
+input:focus, textarea:focus, select:focus {
+    outline: none;
+    box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.5);
+    border-color: #3b82f6;
+}
+
+/* 加载动画 */
+@keyframes spin {
+    to {
+        transform: rotate(360deg);
+    }
+}
+
+.animate-spin {
+    animation: spin 1s linear infinite;
+}

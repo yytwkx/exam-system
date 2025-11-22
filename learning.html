@@ -1,0 +1,205 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>顺序刷题</title>
+    <script src="js/offline-loader.js"></script>
+    <script>
+        LocalLibLoader.loadScript('libs/tailwindcss.min.js','https://cdn.tailwindcss.com');
+        LocalLibLoader.loadStyle('libs/font-awesome.min.css','https://cdn.jsdelivr.net/npm/font-awesome@4.7.0/css/font-awesome.min.css');
+    </script>
+    <!-- 自定义样式 -->
+    <link rel="stylesheet" href="css/styles.css">
+</head>
+<body class="bg-gray-100 min-h-screen">
+    <!-- 导航栏 -->
+    <nav class="bg-blue-600 text-white p-4 shadow-lg">
+        <div class="container mx-auto flex justify-between items-center">
+            <div class="flex items-center space-x-2">
+                <i class="fa fa-book text-2xl"></i>
+                <h1 class="text-xl font-bold">本地独立刷题系统 - 顺序刷题</h1>
+            </div>
+            <div class="flex space-x-4">
+                <button id="toggleRandomMode" class="bg-green-500 hover:bg-green-600 text-white px-3 py-2 rounded">
+                    <i class="fa fa-random mr-2"></i>切换为随机模式
+                </button>
+                <button id="viewProgress" class="bg-yellow-500 hover:bg-yellow-600 text-white px-3 py-2 rounded">
+                    <i class="fa fa-line-chart mr-2"></i>查看进度
+                </button>
+            </div>
+        </div>
+    </nav>
+
+    <!-- 主要内容区域 -->
+    <main class="container mx-auto p-4">
+        <div class="flex flex-col lg:flex-row gap-6">
+            <!-- 导航侧栏 -->
+            <aside class="lg:w-1/3 space-y-4">
+                <div class="bg-white rounded-lg shadow-md p-6">
+                    <h3 class="text-xl font-bold mb-4 flex items-center">
+                        <i class="fa fa-list-ul mr-2"></i>题目导航
+                    </h3>
+
+                    <!-- 进度条 -->
+                    <div class="mb-4">
+                        <div class="flex justify-between text-sm text-gray-600 mb-1">
+                            <span>进度</span>
+                            <span id="progressText">0%</span>
+                        </div>
+                        <div class="w-full bg-gray-200 rounded-full h-2">
+                            <div id="progressBar" class="bg-blue-600 h-2 rounded-full transition-all duration-300" style="width: 0%"></div>
+                        </div>
+                    </div>
+                    
+                    <!-- 快速跳转 -->
+                    <div class="mb-4 flex items-center space-x-2">
+                        <span class="text-sm text-gray-600">快速跳转：</span>
+                        <input type="number" id="jumpToQuestion" min="1" class="w-20 px-2 py-1 border rounded" placeholder="题号">
+                        <button id="jumpButton" class="bg-blue-500 hover:bg-blue-600 text-white px-4 py-1 rounded">
+                            跳转
+                        </button>
+                    </div>
+                    
+                    <!-- 题型筛选 -->
+                    <div class="mb-4 flex flex-wrap gap-2">
+                        <button class="questionTypeFilter px-3 py-1 rounded bg-blue-500 text-white text-sm" data-type="all">全部</button>
+                        <button class="questionTypeFilter px-3 py-1 rounded bg-gray-200 text-gray-700 hover:bg-gray-300 text-sm" data-type="single">单选</button>
+                        <button class="questionTypeFilter px-3 py-1 rounded bg-gray-200 text-gray-700 hover:bg-gray-300 text-sm" data-type="multiple">多选</button>
+                        <button class="questionTypeFilter px-3 py-1 rounded bg-gray-200 text-gray-700 hover:bg-gray-300 text-sm" data-type="judge">判断</button>
+                    </div>
+                    
+                    <!-- 题目列表 -->
+                    <div id="questionListContainer" class="grid gap-1 overflow-y-auto p-2 border rounded" style="grid-template-columns: repeat(10, minmax(0, 1fr)); max-height: 200px;">
+                        <!-- 题目列表项将动态生成 -->
+                    </div>
+                    
+                    <!-- 图例说明 -->
+                    <div class="mt-4 pt-4 border-t border-gray-200 text-xs text-gray-600 space-y-2">
+                        <div class="flex flex-wrap gap-4">
+                            <div class="flex items-center">
+                                <span class="w-4 h-4 bg-gray-200 rounded inline-block mr-1"></span>
+                                <span>未作答</span>
+                            </div>
+                            <div class="flex items-center">
+                                <span class="w-4 h-4 bg-blue-500 rounded inline-block mr-1"></span>
+                                <span>答对</span>
+                            </div>
+                            <div class="flex items-center">
+                                <span class="w-4 h-4 bg-red-500 rounded inline-block mr-1"></span>
+                                <span>答错</span>
+                            </div>
+                            <div class="flex items-center">
+                                <span class="w-4 h-4 bg-yellow-400 rounded inline-block mr-1"></span>
+                                <span>已标记</span>
+                            </div>
+                            <div class="flex items-center">
+                                <span class="w-4 h-4 bg-indigo-500 rounded inline-block mr-1"></span>
+                                <span>当前题</span>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- 底部操作按钮 -->
+                    <div class="mt-6 flex flex-col gap-3">
+                        <button id="restartButton" class="bg-orange-500 hover:bg-orange-600 text-white px-4 py-2 rounded-lg w-full">
+                            <i class="fa fa-refresh mr-2"></i>重新开始
+                        </button>
+                        <button id="viewProgressSide" class="bg-yellow-500 hover:bg-yellow-600 text-white px-4 py-2 rounded-lg w-full">
+                            <i class="fa fa-line-chart mr-2"></i>查看进度
+                        </button>
+                        <button id="exitButton" class="bg-gray-500 hover:bg-gray-600 text-white px-4 py-2 rounded-lg w-full">
+                            <i class="fa fa-sign-out mr-2"></i>退出练习
+                        </button>
+                    </div>
+                </div>
+            </aside>
+
+            <!-- 题目显示区域 -->
+            <section class="lg:flex-1">
+                <div class="bg-white rounded-lg shadow-md p-6">
+                    <div class="flex justify-between items-center mb-4">
+                        <div class="flex items-center flex-wrap gap-3">
+                            <h2 class="text-2xl font-bold">题目</h2>
+                            <span id="questionNumber" class="text-lg">第 1/100 题</span>
+                            <span id="questionType" class="px-2 py-1 bg-blue-100 rounded text-sm">单选题</span>
+                        </div>
+                        <span id="questionStatus" class="px-2 py-1 bg-green-100 rounded text-sm">未作答</span>
+                    </div>
+
+                    <div id="questionContent" class="mb-6 text-lg">
+                        <!-- 题目内容将动态生成 -->
+                    </div>
+
+                    <div id="optionsArea" class="mb-6 space-y-3">
+                        <!-- 选项将动态生成 -->
+                    </div>
+
+                    <div class="mb-6 p-4 bg-gray-50 rounded-lg">
+                        <h3 class="font-bold mb-2">
+                            <i class="fa fa-lightbulb-o mr-2"></i>解析
+                        </h3>
+                        <div id="explanation" class="text-gray-700">
+                            <!-- 解析将动态生成 -->
+                        </div>
+                    </div>
+
+                    <div class="flex flex-wrap justify-between items-center gap-4">
+                        <button id="prevQuestionBtn" class="bg-gray-500 hover:bg-gray-600 text-white px-4 py-2 rounded flex items-center">
+                            <i class="fa fa-arrow-left mr-2"></i>上一题
+                        </button>
+
+                        <div class="flex items-center space-x-4">
+                            <button id="toggleReviewModeBtn" class="bg-green-500 hover:bg-green-600 text-white px-4 py-2 rounded flex items-center">
+                                <i class="fa fa-book mr-2"></i>背题模式
+                            </button>
+                            <button id="markQuestionBtn" class="bg-yellow-500 hover:bg-yellow-600 text-white px-4 py-2 rounded flex items-center">
+                                <i class="fa fa-flag mr-2"></i>标记
+                            </button>
+                            <button id="showAnswerBtn" class="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded flex items-center">
+                                <i class="fa fa-eye mr-2"></i>查看答案
+                            </button>
+                        </div>
+
+                        <button id="nextQuestionBtn" class="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded flex items-center">
+                            下一题 <i class="fa fa-arrow-right ml-2"></i>
+                        </button>
+                    </div>
+                </div>
+            </section>
+        </div>
+
+        <!-- 学习进度模态框 -->
+        <div id="progressModal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center hidden">
+            <div class="bg-white rounded-lg p-8 max-w-md">
+                <h3 class="text-xl font-bold mb-4">学习进度</h3>
+                <div class="mb-6">
+                    <div class="flex justify-between mb-1">
+                        <span>已完成题目:</span>
+                        <span id="completedCount">0</span>
+                    </div>
+                    <div class="flex justify-between mb-1">
+                        <span>正确率:</span>
+                        <span id="accuracy">0%</span>
+                    </div>
+                    <div class="flex justify-between mb-1">
+                        <span>平均用时:</span>
+                        <span id="averageTime">0分钟</span>
+                    </div>
+                    <div class="mt-4">
+                        <button id="closeProgressModal" class="bg-gray-500 hover:bg-gray-600 text-white px-4 py-2 rounded">
+                            <i class="fa fa-times mr-2"></i>关闭
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <!-- JavaScript 文件 -->
+    <script src="js/storageManager.js"></script>
+    <script src="js/question.js"></script>
+    <script src="js/learningManager.js"></script>
+    <script src="js/main.js"></script>
+</body>
+</html>

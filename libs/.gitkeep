@@ -1,0 +1,2 @@
+仅用于确保 libs 目录被提交，实际依赖文件请运行 scripts/download-libs.ps1 后生成。
+
