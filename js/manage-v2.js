@@ -165,6 +165,15 @@ class ManageManager {
         // 获取所有题库，不做任何过滤，与首页显示完全一致
         const banks = StorageManager.getAllQuestionBanks();
         
+        // 更新题库数量显示
+        const countBadge = document.getElementById('bankCountBadge');
+        if (countBadge) {
+            countBadge.textContent = `(共 ${banks.length} 个)`;
+        }
+        
+        // 清空容器，准备逐个添加
+        bankListElement.innerHTML = '';
+        
         if (banks.length === 0) {
             bankListElement.innerHTML = `
                 <div class="text-center p-6 text-gray-500">
@@ -175,75 +184,49 @@ class ManageManager {
             return;
         }
         
-        // 渲染每个题库
-        bankListElement.innerHTML = banks.map(bank => {
-            // 计算各类型题目数量
-            const questions = bank.questions || [];
-            const totalQuestions = questions.length;
-            const singleCount = questions.filter(q => q.type === 'single').length;
-            const multipleCount = questions.filter(q => q.type === 'multiple').length;
-            const judgeCount = questions.filter(q => q.type === 'judge').length;
-            
-            // 处理创建时间
-            const createTime = bank.createTime || bank.createdAt || Date.now();
-            const createDate = new Date(createTime);
-            // 使用更友好的日期格式，避免显示UTC时间
-            const createTimeStr = isNaN(createDate.getTime()) 
-                ? '未知' 
-                : createDate.toLocaleDateString('zh-CN', {
-                    year: 'numeric',
-                    month: '2-digit',
-                    day: '2-digit',
-                    hour: '2-digit',
-                    minute: '2-digit'
-                });
-            
-            return `
-            <div class="border rounded-lg p-4 hover:shadow-md transition-shadow">
-                <div class="flex justify-between items-start">
-                    <div>
-                        <h4 class="text-xl font-bold text-blue-700 mb-1">${bank.name}</h4>
-                        <p class="text-sm text-gray-500">
-                            <i class="fa fa-clock-o mr-1"></i>创建于 ${createTimeStr}
-                        </p>
-                    </div>
-                    <div class="bg-${bank.type === 'exam' ? 'red' : 'green'}-100 text-${bank.type === 'exam' ? 'red' : 'green'}-700 px-3 py-1 rounded-full text-xs font-bold">
-                        ${bank.type === 'exam' ? '考试模式' : '学习模式'}
-                    </div>
-                </div>
-                <div class="mt-3 grid grid-cols-4 gap-4">
-                    <div class="text-center">
-                        <span class="block font-bold text-lg">${totalQuestions}</span>
-                        <span class="text-xs text-gray-500">总题数</span>
-                    </div>
-                    <div class="text-center">
-                        <span class="block font-bold text-lg">${singleCount}</span>
-                        <span class="text-xs text-gray-500">单选题</span>
-                    </div>
-                    <div class="text-center">
-                        <span class="block font-bold text-lg">${multipleCount}</span>
-                        <span class="text-xs text-gray-500">多选题</span>
-                    </div>
-                    <div class="text-center">
-                        <span class="block font-bold text-lg">${judgeCount}</span>
-                        <span class="text-xs text-gray-500">判断题</span>
-                    </div>
-                </div>
-                <div class="mt-3 flex justify-end space-x-2">
-                    <button class="bg-blue-500 hover:bg-blue-600 text-white px-3 py-1 rounded text-sm" onclick="ManageManager.showExportConfirm('${bank.id}')">
-                        <i class="fa fa-download mr-1"></i>导出
-                    </button>
-                    <button class="bg-gray-500 hover:bg-gray-600 text-white px-3 py-1 rounded text-sm" onclick="ManageManager.toggleBankDetail('${bank.id}')">
-                        <i class="fa fa-info-circle mr-1"></i>详情
-                    </button>
-                    <button class="bg-red-500 hover:bg-red-600 text-white px-3 py-1 rounded text-sm" onclick="ManageManager.showDeleteConfirm('${bank.id}')">
-                        <i class="fa fa-trash mr-1"></i>删除
-                    </button>
-                </div>
-                <div id="bankDetail-${bank.id}" class="hidden mt-4 border-t pt-4">
-                    <h5 class="font-bold text-gray-700 mb-2">题目列表</h5>
-                    <div class="max-h-96 overflow-y-auto space-y-2">
-                        ${questions.map((q, i) => `
+        // 逐个安全渲染每个题库，一个出错不影响其他
+        banks.forEach((bank, index) => {
+            try {
+                if (!bank || typeof bank !== 'object') {
+                    console.warn('跳过无效题库:', index, bank);
+                    return;
+                }
+                
+                const questions = bank.questions || [];
+                const totalQuestions = questions.length;
+                const singleCount = questions.filter(q => q && q.type === 'single').length;
+                const multipleCount = questions.filter(q => q && q.type === 'multiple').length;
+                const judgeCount = questions.filter(q => q && q.type === 'judge').length;
+                
+                const createTime = bank.createTime || bank.createdAt || Date.now();
+                const createDate = new Date(createTime);
+                const createTimeStr = isNaN(createDate.getTime()) 
+                    ? '未知' 
+                    : createDate.toLocaleDateString('zh-CN', {
+                        year: 'numeric',
+                        month: '2-digit',
+                        day: '2-digit',
+                        hour: '2-digit',
+                        minute: '2-digit'
+                    });
+                
+                // 安全生成题目列表HTML
+                let questionsHtml = '';
+                try {
+                    questionsHtml = questions.map((q, i) => {
+                        if (!q || typeof q !== 'object') return '';
+                        
+                        let optionsHtml = '';
+                        if (q.options && typeof q.options === 'object' && q.options !== null) {
+                            try {
+                                const entries = Object.entries(q.options);
+                                if (entries.length > 0) {
+                                    optionsHtml = `<div class="mt-1 text-xs text-gray-600">${entries.map(([k, v]) => `<span class="mr-3">${k}. ${v}</span>`).join('')}</div>`;
+                                }
+                            } catch (e) {}
+                        }
+                        
+                        return `
                             <div class="p-2 bg-gray-50 rounded text-sm">
                                 <div class="flex items-start gap-2">
                                     <span class="text-blue-600 font-bold flex-shrink-0">${i + 1}.</span>
@@ -255,21 +238,62 @@ class ManageManager {
                                             </span>
                                             <span class="text-green-600 font-medium">答案: ${q.answer || '无'}</span>
                                         </div>
-                                        ${q.options && Object.keys(q.options).length > 0 ? `
-                                            <div class="mt-1 text-xs text-gray-600">
-                                                ${Object.entries(q.options).map(([k, v]) => `<span class="mr-3">${k}. ${v}</span>`).join('')}
-                                            </div>
-                                        ` : ''}
+                                        ${optionsHtml}
                                         ${q.analysis ? `<p class="mt-1 text-xs text-orange-600">解析: ${q.analysis}</p>` : ''}
                                     </div>
                                 </div>
                             </div>
-                        `).join('')}
+                        `;
+                    }).join('');
+                } catch (e) {
+                    console.error('生成题目列表HTML失败:', e);
+                    questionsHtml = '<p class="text-gray-500">题目列表加载失败</p>';
+                }
+                
+                const card = document.createElement('div');
+                card.className = 'border rounded-lg p-4 hover:shadow-md transition-shadow mb-3';
+                card.innerHTML = `
+                    <div class="flex justify-between items-start">
+                        <div>
+                            <h4 class="text-xl font-bold text-blue-700 mb-1">${bank.name || '未命名题库'}</h4>
+                            <p class="text-sm text-gray-500">
+                                <i class="fa fa-clock-o mr-1"></i>创建于 ${createTimeStr}
+                            </p>
+                        </div>
+                        <div class="bg-${bank.type === 'exam' ? 'red' : 'green'}-100 text-${bank.type === 'exam' ? 'red' : 'green'}-700 px-3 py-1 rounded-full text-xs font-bold">
+                            ${bank.type === 'exam' ? '考试模式' : '学习模式'}
+                        </div>
                     </div>
-                </div>
-            </div>
-        `;
-        }).join('');
+                    <div class="mt-3 grid grid-cols-4 gap-4">
+                        <div class="text-center"><span class="block font-bold text-lg">${totalQuestions}</span><span class="text-xs text-gray-500">总题数</span></div>
+                        <div class="text-center"><span class="block font-bold text-lg">${singleCount}</span><span class="text-xs text-gray-500">单选题</span></div>
+                        <div class="text-center"><span class="block font-bold text-lg">${multipleCount}</span><span class="text-xs text-gray-500">多选题</span></div>
+                        <div class="text-center"><span class="block font-bold text-lg">${judgeCount}</span><span class="text-xs text-gray-500">判断题</span></div>
+                    </div>
+                    <div class="mt-3 flex justify-end space-x-2">
+                        <button class="bg-blue-500 hover:bg-blue-600 text-white px-3 py-1 rounded text-sm" onclick="ManageManager.showExportConfirm('${bank.id}')">
+                            <i class="fa fa-download mr-1"></i>导出
+                        </button>
+                        <button class="bg-gray-500 hover:bg-gray-600 text-white px-3 py-1 rounded text-sm" onclick="ManageManager.toggleBankDetail('${bank.id}')">
+                            <i class="fa fa-info-circle mr-1"></i>详情
+                        </button>
+                        <button class="bg-red-500 hover:bg-red-600 text-white px-3 py-1 rounded text-sm" onclick="ManageManager.showDeleteConfirm('${bank.id}')">
+                            <i class="fa fa-trash mr-1"></i>删除
+                        </button>
+                    </div>
+                    <div id="bankDetail-${bank.id}" class="hidden mt-4 border-t pt-4">
+                        <h5 class="font-bold text-gray-700 mb-2">题目列表</h5>
+                        <div class="max-h-96 overflow-y-auto space-y-2">
+                            ${questionsHtml}
+                        </div>
+                    </div>
+                `;
+                
+                bankListElement.appendChild(card);
+            } catch (error) {
+                console.error('渲染题库卡片失败:', index, error, bank);
+            }
+        });
     }
     
     /**

@@ -1,5 +1,10 @@
 /* 自定义样式 */
 
+/* 页面隐藏（不依赖 Tailwind 异步加载，避免首屏多页同时显示） */
+.hidden {
+    display: none !important;
+}
+
 /* 通用样式 */
 body {
     font-family: 'SimSun', '宋体', serif;

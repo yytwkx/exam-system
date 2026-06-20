@@ -3,16 +3,15 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+    <meta http-equiv="Pragma" content="no-cache">
+    <meta http-equiv="Expires" content="0">
     <title>本地独立刷题系统</title>
-    <script src="js/offline-loader.js"></script>
-    <script>
-        // 使用Tailwind CSS JavaScript版本（本地优先，CDN备用）
-        LocalLibLoader.loadScript('libs/tailwindcss.min.js','https://cdn.tailwindcss.com');
-        LocalLibLoader.loadStyle('libs/font-awesome.min.css','https://cdn.jsdelivr.net/npm/font-awesome@4.7.0/css/font-awesome.min.css');
-        LocalLibLoader.loadScript('libs/xlsx.full.min.js','https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js');
-    </script>
+    <script src="libs/tailwindcss.min.js?v=2"></script>
+    <link rel="stylesheet" href="libs/font-awesome.min.css?v=2">
+    <script src="libs/xlsx.full.min.js?v=2"></script>
     <!-- 自定义样式 -->
-    <link rel="stylesheet" href="css/styles.css">
+    <link rel="stylesheet" href="css/styles.css?v=2">
 </head>
 <body class="bg-gray-100 min-h-screen">
     <!-- 导航栏 -->
@@ -52,8 +51,8 @@
         <div id="homePage" class="page">
             <div class="bg-white rounded-lg shadow-md p-6 mb-6">
                 <h2 class="text-2xl font-bold text-center mb-6">欢迎使用本地独立刷题系统</h2>
-                <p class="text-gray-600 text-center mb-8">无需服务器，完全本地运行，支持多题库管理、模拟考试、顺序刷题和随机刷题</p>
-                
+                <p class="text-gray-600 text-center mb-8">无需服务器，完全本地运行，支持多题库管理、模拟考试、顺序刷题、随机刷题和生成试卷</p> 
+
                 <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
                     <button id="startExam" class="bg-red-500 hover:bg-red-600 text-white p-6 rounded-lg shadow flex flex-col items-center justify-center transition duration-300 transform hover:scale-105">
                         <i class="fa fa-graduation-cap text-4xl mb-4"></i>
@@ -85,9 +84,9 @@
                         <i class="fa fa-upload"></i>
                         <span>导入题库</span>
                     </button>
-                    <button id="quickImportBtn" class="bg-green-500 hover:bg-green-600 text-white px-6 py-3 rounded-lg shadow flex items-center space-x-2">
-                        <i class="fa fa-download"></i>
-                        <span>快速导入示例题库</span>
+                    <button id="generatePaperBtn" class="bg-purple-500 hover:bg-purple-600 text-white px-6 py-3 rounded-lg shadow flex items-center space-x-2">
+                        <i class="fa fa-file-word-o"></i>
+                        <span>生成试卷</span>
                     </button>
                 </div>
             </div>
@@ -395,6 +394,64 @@
             </div>
         </div>
 
+        <!-- 生成试卷弹窗 -->
+        <div id="paperModal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 hidden">
+            <div class="bg-white rounded-lg shadow-lg p-6 max-w-2xl w-full mx-4 max-h-[90vh] overflow-y-auto">
+                <h3 class="text-xl font-bold mb-4">生成试卷</h3>
+                
+                <!-- 选择题库 -->
+                <div class="mb-4">
+                    <label class="block font-semibold mb-2">选择题库</label>
+                    <select id="paperBankSelect" class="w-full px-4 py-2 border rounded">
+                        <option value="">请选择题库</option>
+                    </select>
+                </div>
+                
+                <!-- 题型设置 -->
+                <div class="grid grid-cols-3 gap-4 mb-4">
+                    <div>
+                        <label class="block font-semibold mb-2 text-sm">单选题数量</label>
+                        <input type="number" id="paperSingleCount" min="0" class="w-full px-3 py-2 border rounded" value="0">
+                        <label class="block text-xs text-gray-500 mt-1">每题分数</label>
+                        <input type="number" id="paperSingleScore" min="0.5" step="0.5" class="w-full px-3 py-2 border rounded" value="1">
+                    </div>
+                    <div>
+                        <label class="block font-semibold mb-2 text-sm">多选题数量</label>
+                        <input type="number" id="paperMultipleCount" min="0" class="w-full px-3 py-2 border rounded" value="0">
+                        <label class="block text-xs text-gray-500 mt-1">每题分数</label>
+                        <input type="number" id="paperMultipleScore" min="0.5" step="0.5" class="w-full px-3 py-2 border rounded" value="2">
+                    </div>
+                    <div>
+                        <label class="block font-semibold mb-2 text-sm">判断题数量</label>
+                        <input type="number" id="paperJudgeCount" min="0" class="w-full px-3 py-2 border rounded" value="0">
+                        <label class="block text-xs text-gray-500 mt-1">每题分数</label>
+                        <input type="number" id="paperJudgeScore" min="0.5" step="0.5" class="w-full px-3 py-2 border rounded" value="1">
+                    </div>
+                </div>
+                
+                <!-- 方案管理 -->
+                <div class="bg-gray-50 p-4 rounded mb-4">
+                    <div class="flex items-center gap-2 mb-3">
+                        <input type="text" id="paperSchemeName" class="flex-1 px-3 py-2 border rounded" placeholder="方案名称（如：期末模拟A卷）">
+                        <button id="savePaperScheme" class="px-4 py-2 bg-blue-500 text-white rounded text-sm hover:bg-blue-600">保存方案</button>
+                    </div>
+                    <div class="flex items-center gap-2">
+                        <select id="paperSchemeSelect" class="flex-1 px-3 py-2 border rounded">
+                            <option value="">选择历史方案</option>
+                        </select>
+                        <button id="applyPaperScheme" class="px-4 py-2 bg-gray-500 text-white rounded text-sm hover:bg-gray-600">应用</button>
+                        <button id="deletePaperScheme" class="px-3 py-2 bg-red-400 text-white rounded text-sm hover:bg-red-500">删除</button>
+                    </div>
+                </div>
+                
+                <!-- 底部按钮 -->
+                <div class="flex justify-end space-x-3">
+                    <button id="cancelPaper" class="px-4 py-2 bg-gray-500 text-white rounded hover:bg-gray-600">取消</button>
+                    <button id="confirmPaper" class="px-4 py-2 bg-green-500 text-white rounded hover:bg-green-600">生成试卷</button>
+                </div>
+            </div>
+        </div>
+
         <!-- 提示消息 -->
         <div id="toast" class="fixed bottom-4 right-4 bg-gray-800 text-white px-4 py-2 rounded-lg shadow-lg transform translate-y-20 opacity-0 transition-all duration-300 z-50">
             <span id="toastMessage">提示信息</span>
@@ -408,20 +465,21 @@
                 <p class="text-yellow-400 font-semibold text-lg">⚠️ 仅限交流学习使用，侵权必究</p>
                 <div class="flex flex-col md:flex-row justify-center items-center gap-4 text-sm">
                     <p>制作者：<span class="text-blue-300">杨宇彤</span></p>
-                    <p>邮箱：<span class="text-blue-300">997783148@qq.com</span></p>
+                    <p>联系方式：<span class="text-blue-300">17783398214/15337862284</span></p>
                 </div>
-                <p class="text-gray-400 text-xs mt-2">© 2025 本地独立刷题系统 - 完全本地运行，无需网络支持</p>
+                <p class="text-gray-400 text-xs mt-2">© V1.1 本地独立刷题系统 - 完全本地运行，无需网络支持</p>
             </div>
         </div>
     </footer>
 
     <!-- JavaScript文件 -->
-    <script src="js/storageManager.js"></script>
-    <script src="js/defaultData.js"></script>
-    <script src="js/question.js"></script>
-    <script src="js/examManager.js"></script>
-    <script src="js/learningManager.js"></script>
-    <script src="js/importManager.js"></script>
-    <script src="js/main.js"></script>
+    <script src="js/storageManager.js?v=5"></script>
+    <script src="js/defaultData.js?v=5"></script>
+    <script src="js/question.js?v=5"></script>
+    <script src="js/paperGenerator.js?v=1"></script>
+    <script src="js/examManager.js?v=5"></script>
+    <script src="js/learningManager.js?v=5"></script>
+    <script src="js/importManager.js?v=5"></script>
+    <script src="js/main.js?v=5"></script>
 </body>
 </html>

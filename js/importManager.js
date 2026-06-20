@@ -161,8 +161,10 @@ class ImportManager {
                 };
             }
             
-            // 设置题库名称
+            // 设置题库名称与来源描述
             questionBank.name = bankName;
+            const formatLabel = fileExtension === '.json' ? 'JSON' : 'Excel';
+            questionBank.description = `导入自${formatLabel}文件，共${questionBank.questions.length}题`;
             
             // 保存到本地存储
             const success = StorageManager.addQuestionBank(questionBank);
@@ -170,13 +172,15 @@ class ImportManager {
             if (success) {
                 this.showToast(`题库导入成功！共${questionBank.questions.length}道题目`);
                 this.hideImportModal();
-                // 更新题库列表
-                if (typeof AppManager !== 'undefined') {
-                    AppManager.updateQuestionBankList();
-                }
+                this.hideLoading();
+                
                 // 重置文件输入
                 fileInput.value = '';
                 bankNameInput.value = '';
+                
+                // 刷新页面以显示最新题库列表
+                window.location.reload();
+                return;
             } else {
                 this.showToast('题库保存失败，请稍后重试');
             }
@@ -185,6 +189,8 @@ class ImportManager {
             this.showToast('文件解析失败: ' + error.message);
         } finally {
             this.hideLoading();
+            // 确保对话框被关闭（无论成功还是失败）
+            this.hideImportModal();
         }
     }
     
@@ -325,6 +331,17 @@ class ImportManager {
         reader.readAsArrayBuffer(file);
     }
     
+    /**
+     * 显示提示消息（兼容 AppManager 或 alert 回退）
+     */
+    static showToast(message) {
+        if (typeof AppManager !== 'undefined' && AppManager.showToast) {
+            AppManager.showToast(message);
+        } else {
+            alert(message);
+        }
+    }
+
     /**
      * 隐藏导入对话框
      */
@@ -613,6 +630,20 @@ class ImportManager {
     }
 
     /**
+     * 自动刷新所有页面的题库列表
+     */
+    static refreshBankLists() {
+        // 刷新首页题库列表
+        if (typeof AppManager !== 'undefined' && AppManager.updateQuestionBankList) {
+            AppManager.updateQuestionBankList();
+        }
+        // 刷新管理页面题库列表（如果当前在管理页面）
+        if (typeof ManageManager !== 'undefined' && ManageManager.renderQuestionBankList) {
+            ManageManager.renderQuestionBankList();
+        }
+    }
+
+    /**
      * 保存题库
      * @param {Object} questionBank 题库对象
      */
@@ -640,11 +671,8 @@ class ImportManager {
                 success: true
             });
             
-            // 更新界面
-            if (typeof AppManager !== 'undefined') {
-                AppManager.updateQuestionBankList();
-                AppManager.showStatistics();
-            }
+            // 自动刷新题库列表
+            this.refreshBankLists();
             
             this.hideLoading();
             AppManager.showToast(`题库导入成功！共${standardizedBank.questions.length}道题目`);
@@ -677,31 +705,35 @@ class ImportManager {
      * @returns {Object} 标准化后的题库对象
      */
     static standardizeQuestionBankFormat(questionBank) {
+        // 强制生成新的唯一ID，避免导入重复ID导致删除/详情错位问题
+        const newBankId = StorageManager.generateUniqueId ? StorageManager.generateUniqueId() : this.generateUniqueId();
+        
         // 如果是直接的题目列表，转换为标准格式
         if (Array.isArray(questionBank)) {
             return {
-                id: this.generateUniqueId(),
-                name: '新导入题库_' + new Date().toLocaleDateString(),
+                id: newBankId,
+                name: '新导入题库_' + new Date().toLocaleDateString('zh-CN'),
                 description: '导入的题库',
                 createTime: Date.now(),
+                updateTime: Date.now(),
                 questions: questionBank.map((q, index) => ({
                     ...q,
-                    id: q.id || this.generateUniqueId(),
+                    id: StorageManager.generateUniqueId ? StorageManager.generateUniqueId() : this.generateUniqueId(),
                     index: q.index || index + 1
                 }))
             };
         }
         
-        // 确保必要字段存在
+        // 确保必要字段存在，强制使用新ID
         return {
-            id: questionBank.id || this.generateUniqueId(),
+            id: newBankId,
             name: questionBank.name || '未命名题库',
             description: questionBank.description || '',
-            createTime: questionBank.createTime || Date.now(),
+            createTime: Date.now(), // 使用当前时间作为导入时间
             updateTime: Date.now(),
-            questions: questionBank.questions.map((q, index) => ({
+            questions: (questionBank.questions || []).map((q, index) => ({
                 ...q,
-                id: q.id || this.generateUniqueId(),
+                id: StorageManager.generateUniqueId ? StorageManager.generateUniqueId() : this.generateUniqueId(),
                 index: q.index || index + 1
             }))
         };

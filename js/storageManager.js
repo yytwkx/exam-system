@@ -106,6 +106,12 @@ class StorageManager {
         try {
             const banks = this.getAllQuestionBanks();
             
+            // 防御性检查：确保ID唯一，如果已存在则重新生成
+            if (!questionBank.id || banks.some(bank => bank.id === questionBank.id)) {
+                questionBank.id = this.generateUniqueId();
+                console.warn('题库ID已存在或为空，已重新生成唯一ID:', questionBank.id);
+            }
+            
             // 检查题库名称是否已存在
             const existingBank = banks.find(bank => 
                 bank.name === questionBank.name && bank.id !== questionBank.id
@@ -169,9 +175,12 @@ class StorageManager {
      */
     static deleteQuestionBank(bankId) {
         try {
-            // 删除题库
+            // 删除题库（只删除第一个匹配的，防止重复ID导致误删多个）
             let banks = this.getAllQuestionBanks();
-            banks = banks.filter(bank => bank.id !== bankId);
+            const index = banks.findIndex(bank => bank.id === bankId);
+            if (index !== -1) {
+                banks.splice(index, 1);
+            }
             localStorage.setItem('question_banks', JSON.stringify(banks));
             
             // 删除相关的学习进度

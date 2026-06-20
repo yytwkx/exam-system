@@ -19,21 +19,21 @@ class AppManager {
         }
         
         // 根据页面路径执行不同的初始化
-        const currentPath = window.location.pathname;
+        const pageType = this.resolvePageType();
         
-        if (currentPath.includes('index.html') || currentPath === '/') {
+        if (pageType === 'index') {
             // 首页初始化
             this.initHomePage();
-        } else if (currentPath.includes('exam.html')) {
+        } else if (pageType === 'exam') {
             // 考试页面初始化
             this.initExamPage();
-        } else if (currentPath.includes('learning.html')) {
+        } else if (pageType === 'learning') {
             // 学习页面初始化
             this.initLearningPage();
-        } else if (currentPath.includes('random.html')) {
+        } else if (pageType === 'random') {
             // 随机刷题页面初始化
             this.initRandomPage();
-        } else if (currentPath.includes('manage.html')) {
+        } else if (pageType === 'manage') {
             // 管理页面初始化
             this.initManagePage();
         }
@@ -45,10 +45,26 @@ class AppManager {
     }
 
     /**
+     * 解析当前页面类型（兼容 file:// 与各类路径格式）
+     * @returns {string} index | exam | learning | random | manage
+     */
+    static resolvePageType() {
+        const path = decodeURIComponent(window.location.pathname).replace(/\\/g, '/').toLowerCase();
+        if (path.includes('exam.html')) return 'exam';
+        if (path.includes('learning.html')) return 'learning';
+        if (path.includes('random.html')) return 'random';
+        if (path.includes('manage.html')) return 'manage';
+        return 'index';
+    }
+
+    /**
      * 初始化首页
      */
     static initHomePage() {
         console.log('初始化首页...');
+        
+        // 确保首屏只显示首页（hidden 类在 Tailwind 加载前也需生效）
+        this.showPage('homePage');
         
         // 绑定首页事件
         this.bindHomePageEvents();
@@ -177,6 +193,9 @@ class AppManager {
     static initManagePage() {
         console.log('初始化管理页面...');
         
+        // 初始化存储
+        StorageManager.init();
+        
         // 初始化导入模块
         ImportManager.init();
         
@@ -247,7 +266,10 @@ class AppManager {
                             <span>${new Date(bank.createTime || Date.now()).toLocaleDateString()}</span>
                         </div>
                     </div>
-                    <div class="flex space-x-2">
+                    <div class="flex flex-wrap gap-2">
+                        <button class="manage-btn px-3 py-1 bg-blue-500 text-white rounded text-sm hover:bg-blue-600 transition" data-id="${bank.id}">
+                            题库管理
+                        </button>
                         <button class="exam-btn px-3 py-1 bg-red-500 text-white rounded text-sm hover:bg-red-600 transition" data-id="${bank.id}">
                             模拟考试
                         </button>
@@ -272,6 +294,14 @@ class AppManager {
      * 绑定题库项的事件
      */
     static bindBankItemEvents() {
+        // 题库管理按钮
+        document.querySelectorAll('.manage-btn').forEach(btn => {
+            btn.addEventListener('click', (e) => {
+                e.stopPropagation();
+                window.location.href = 'manage.html';
+            });
+        });
+        
         // 模拟考试按钮
         document.querySelectorAll('.exam-btn').forEach(btn => {
             btn.addEventListener('click', (e) => {
@@ -380,9 +410,9 @@ class AppManager {
             this.handleImport();
         });
         
-        // 快速导入示例题库按钮
-        document.getElementById('quickImportBtn')?.addEventListener('click', () => {
-            this.quickImportExampleBank();
+        // 生成试卷按钮
+        document.getElementById('generatePaperBtn')?.addEventListener('click', () => {
+            this.showPaperModal();
         });
     }
     
@@ -400,17 +430,11 @@ class AppManager {
         }
         
         // 显示题库选择页面
-        const selectBankPage = document.getElementById('selectBankPage');
-        const homePage = document.getElementById('homePage');
+        const bankSelectList = document.getElementById('bankSelectList');
+        this.showPage('selectBankPage');
         
-        if (selectBankPage && homePage) {
-            homePage.classList.add('hidden');
-            selectBankPage.classList.remove('hidden');
-            
-            // 渲染题库列表
-            const bankSelectList = document.getElementById('bankSelectList');
-            if (bankSelectList) {
-                bankSelectList.innerHTML = banks.map(bank => `
+        if (bankSelectList) {
+            bankSelectList.innerHTML = banks.map(bank => `
                     <div class="bank-item bg-white p-4 rounded-lg shadow mb-3 cursor-pointer hover:bg-gray-50 transition" data-bank-id="${bank.id}">
                         <h3 class="text-lg font-semibold text-gray-800">${bank.name}</h3>
                         <p class="text-sm text-gray-500 mt-1">${bank.description || '暂无描述'}</p>
@@ -433,7 +457,6 @@ class AppManager {
                         }
                     });
                 });
-            }
         } else {
             // 如果页面元素不存在，使用简单的选择方式
             const bankNames = banks.map(b => b.name);
@@ -527,6 +550,7 @@ class AppManager {
             })
             .then(data => {
                 // 导入题库
+                data.description = `导入自JSON文件，共${data.questions?.length || 0}题`;
                 const success = StorageManager.addQuestionBank(data);
                 if (success) {
                     this.showToast('示例题库导入成功！');
@@ -613,13 +637,10 @@ class AppManager {
      * @param {Object} bank 题库对象
      */
     static showExamSettingsDialog(bankId, bank) {
-        // 显示设置页面
         const examSettingsPage = document.getElementById('examSettingsPage');
-        const homePage = document.getElementById('homePage');
         
-        if (examSettingsPage && homePage) {
-            homePage.classList.add('hidden');
-            examSettingsPage.classList.remove('hidden');
+        if (examSettingsPage) {
+            this.showPage('examSettingsPage');
             
             // 统计各类型题目数量
             const singleCount = bank.questions?.filter(q => q.type === 'single').length || 0;
@@ -727,8 +748,7 @@ class AppManager {
             
             if (cancelBtn) {
                 cancelBtn.onclick = () => {
-                    examSettingsPage.classList.add('hidden');
-                    homePage.classList.remove('hidden');
+                    this.showPage('homePage');
                 };
             }
         } else {
@@ -946,6 +966,281 @@ class AppManager {
             </div>
         `;
     }
+
+    // ==================== 试卷生成 ====================
+
+    /**
+     * 显示试卷生成弹窗
+     */
+    static showPaperModal() {
+        const banks = StorageManager.getAllQuestionBanks();
+        if (banks.length === 0) {
+            alert('请先导入题库');
+            this.showImportModal();
+            return;
+        }
+
+        const modal = document.getElementById('paperModal');
+        if (!modal) return;
+        modal.classList.remove('hidden');
+
+        // 加载题库下拉框
+        this.loadPaperBankSelect();
+
+        // 加载历史方案
+        this.loadPaperSchemes();
+
+        // 默认选中第一个题库并更新数量限制
+        const bankSelect = document.getElementById('paperBankSelect');
+        if (bankSelect && bankSelect.options.length > 1) {
+            bankSelect.selectedIndex = 1;
+            this.updatePaperBankLimits();
+        }
+
+        // 绑定弹窗事件（只绑定一次）
+        if (!this._paperModalBound) {
+            this.bindPaperModalEvents();
+            this._paperModalBound = true;
+        }
+    }
+
+    /**
+     * 隐藏试卷生成弹窗
+     */
+    static hidePaperModal() {
+        const modal = document.getElementById('paperModal');
+        if (modal) modal.classList.add('hidden');
+    }
+
+    /**
+     * 加载题库选择下拉框
+     */
+    static loadPaperBankSelect() {
+        const bankSelect = document.getElementById('paperBankSelect');
+        if (!bankSelect) return;
+
+        const banks = StorageManager.getAllQuestionBanks();
+        bankSelect.innerHTML = '<option value="">请选择题库</option>' +
+            banks.map(b => `<option value="${b.id}">${this._escapeHtml(b.name)} (${b.questions?.length || 0}题)</option>`).join('');
+    }
+
+    /**
+     * 更新题库数量限制提示
+     */
+    static updatePaperBankLimits() {
+        const bankSelect = document.getElementById('paperBankSelect');
+        if (!bankSelect || !bankSelect.value) return;
+
+        const bank = StorageManager.getQuestionBank(bankSelect.value);
+        if (!bank) return;
+
+        const single = bank.questions?.filter(q => q.type === 'single').length || 0;
+        const multiple = bank.questions?.filter(q => q.type === 'multiple').length || 0;
+        const judge = bank.questions?.filter(q => q.type === 'judge').length || 0;
+
+        const singleCount = document.getElementById('paperSingleCount');
+        const multipleCount = document.getElementById('paperMultipleCount');
+        const judgeCount = document.getElementById('paperJudgeCount');
+
+        if (singleCount) { singleCount.max = single; singleCount.title = `题库中有 ${single} 道单选题`; }
+        if (multipleCount) { multipleCount.max = multiple; multipleCount.title = `题库中有 ${multiple} 道多选题`; }
+        if (judgeCount) { judgeCount.max = judge; judgeCount.title = `题库中有 ${judge} 道判断题`; }
+    }
+
+    /**
+     * 加载历史方案列表
+     */
+    static loadPaperSchemes() {
+        const schemeSelect = document.getElementById('paperSchemeSelect');
+        if (!schemeSelect) return;
+
+        const schemes = PaperGenerator.getSchemes();
+        schemeSelect.innerHTML = '<option value="">选择历史方案</option>' +
+            schemes.map(s => `<option value="${s.id}">${this._escapeHtml(s.name)} (${this._escapeHtml(s.bankName)})</option>`).join('');
+    }
+
+    /**
+     * 绑定试卷生成弹窗事件
+     */
+    static bindPaperModalEvents() {
+        // 取消按钮
+        document.getElementById('cancelPaper')?.addEventListener('click', () => {
+            this.hidePaperModal();
+        });
+
+        // 生成按钮
+        document.getElementById('confirmPaper')?.addEventListener('click', () => {
+            this.handleGeneratePaper();
+        });
+
+        // 保存方案
+        document.getElementById('savePaperScheme')?.addEventListener('click', () => {
+            this.handleSavePaperScheme();
+        });
+
+        // 应用方案
+        document.getElementById('applyPaperScheme')?.addEventListener('click', () => {
+            this.handleApplyPaperScheme();
+        });
+
+        // 删除方案
+        document.getElementById('deletePaperScheme')?.addEventListener('click', () => {
+            this.handleDeletePaperScheme();
+        });
+
+        // 题库切换时更新限制
+        document.getElementById('paperBankSelect')?.addEventListener('change', () => {
+            this.updatePaperBankLimits();
+        });
+    }
+
+    /**
+     * 保存当前配置为方案
+     */
+    static handleSavePaperScheme() {
+        const bankSelect = document.getElementById('paperBankSelect');
+        const schemeName = document.getElementById('paperSchemeName')?.value.trim();
+
+        if (!bankSelect?.value) {
+            alert('请先选择题库');
+            return;
+        }
+        if (!schemeName) {
+            alert('请输入方案名称');
+            return;
+        }
+
+        const bank = StorageManager.getQuestionBank(bankSelect.value);
+        const scheme = {
+            name: schemeName,
+            bankId: bankSelect.value,
+            bankName: bank?.name || '',
+            singleCount: document.getElementById('paperSingleCount')?.value || 0,
+            multipleCount: document.getElementById('paperMultipleCount')?.value || 0,
+            judgeCount: document.getElementById('paperJudgeCount')?.value || 0,
+            singleScore: document.getElementById('paperSingleScore')?.value || 1,
+            multipleScore: document.getElementById('paperMultipleScore')?.value || 2,
+            judgeScore: document.getElementById('paperJudgeScore')?.value || 1
+        };
+
+        PaperGenerator.saveScheme(scheme);
+        this.loadPaperSchemes();
+        this.showToast('方案保存成功', 'success');
+    }
+
+    /**
+     * 应用选中的方案
+     */
+    static handleApplyPaperScheme() {
+        const schemeSelect = document.getElementById('paperSchemeSelect');
+        if (!schemeSelect?.value) {
+            alert('请先选择一个方案');
+            return;
+        }
+
+        const schemes = PaperGenerator.getSchemes();
+        const scheme = schemes.find(s => s.id === schemeSelect.value);
+        if (!scheme) return;
+
+        // 设置题库
+        const bankSelect = document.getElementById('paperBankSelect');
+        if (bankSelect) {
+            bankSelect.value = scheme.bankId;
+            this.updatePaperBankLimits();
+        }
+
+        // 设置数量
+        const singleCount = document.getElementById('paperSingleCount');
+        const multipleCount = document.getElementById('paperMultipleCount');
+        const judgeCount = document.getElementById('paperJudgeCount');
+        const singleScore = document.getElementById('paperSingleScore');
+        const multipleScore = document.getElementById('paperMultipleScore');
+        const judgeScore = document.getElementById('paperJudgeScore');
+        const schemeName = document.getElementById('paperSchemeName');
+
+        if (singleCount) singleCount.value = scheme.singleCount;
+        if (multipleCount) multipleCount.value = scheme.multipleCount;
+        if (judgeCount) judgeCount.value = scheme.judgeCount;
+        if (singleScore) singleScore.value = scheme.singleScore;
+        if (multipleScore) multipleScore.value = scheme.multipleScore;
+        if (judgeScore) judgeScore.value = scheme.judgeScore;
+        if (schemeName) schemeName.value = scheme.name;
+
+        this.showToast('方案已应用', 'success');
+    }
+
+    /**
+     * 删除选中的方案
+     */
+    static handleDeletePaperScheme() {
+        const schemeSelect = document.getElementById('paperSchemeSelect');
+        if (!schemeSelect?.value) {
+            alert('请先选择一个方案');
+            return;
+        }
+
+        if (!confirm('确定要删除该方案吗？')) return;
+
+        PaperGenerator.deleteScheme(schemeSelect.value);
+        this.loadPaperSchemes();
+        schemeSelect.value = '';
+        this.showToast('方案已删除', 'success');
+    }
+
+    /**
+     * 生成试卷
+     */
+    static handleGeneratePaper() {
+        const bankSelect = document.getElementById('paperBankSelect');
+        if (!bankSelect?.value) {
+            alert('请先选择题库');
+            return;
+        }
+
+        const bank = StorageManager.getQuestionBank(bankSelect.value);
+        if (!bank) {
+            alert('题库不存在');
+            return;
+        }
+
+        const config = {
+            singleCount: parseInt(document.getElementById('paperSingleCount')?.value) || 0,
+            multipleCount: parseInt(document.getElementById('paperMultipleCount')?.value) || 0,
+            judgeCount: parseInt(document.getElementById('paperJudgeCount')?.value) || 0,
+            singleScore: parseFloat(document.getElementById('paperSingleScore')?.value) || 1,
+            multipleScore: parseFloat(document.getElementById('paperMultipleScore')?.value) || 2,
+            judgeScore: parseFloat(document.getElementById('paperJudgeScore')?.value) || 1
+        };
+
+        if (config.singleCount + config.multipleCount + config.judgeCount === 0) {
+            alert('至少需要选择一种题型的题目');
+            return;
+        }
+
+        try {
+            // 随机抽题
+            const questions = PaperGenerator.generateQuestions(bank, config);
+
+            // 生成 Word
+            PaperGenerator.generateWord(bank, questions, config);
+
+            this.showToast('试卷生成成功，已开始下载', 'success');
+            this.hidePaperModal();
+        } catch (error) {
+            alert('生成试卷失败：' + error.message);
+        }
+    }
+
+    static _escapeHtml(text) {
+        if (!text) return '';
+        return String(text)
+            .replace(/&/g, '&amp;')
+            .replace(/</g, '&lt;')
+            .replace(/>/g, '&gt;')
+            .replace(/"/g, '&quot;');
+    }
+
+    // ==================== 试卷生成结束 ====================
 
     /**
      * 显示欢迎信息

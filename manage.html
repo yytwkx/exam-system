@@ -3,15 +3,14 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+    <meta http-equiv="Pragma" content="no-cache">
+    <meta http-equiv="Expires" content="0">
     <title>题库管理</title>
-    <script src="js/offline-loader.js"></script>
-    <script>
-        LocalLibLoader.loadScript('libs/tailwindcss.min.js','https://cdn.tailwindcss.com');
-        LocalLibLoader.loadStyle('libs/font-awesome.min.css','https://cdn.jsdelivr.net/npm/font-awesome@4.7.0/css/font-awesome.min.css');
-        LocalLibLoader.loadScript('libs/xlsx.full.min.js','https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js');
-    </script>
+    <script src="libs/tailwindcss.min.js?v=5"></script>
+    <link rel="stylesheet" href="libs/font-awesome.min.css?v=5">
     <!-- 自定义样式 -->
-    <link rel="stylesheet" href="css/styles.css">
+    <link rel="stylesheet" href="css/styles.css?v=5">
 </head>
 <body class="bg-gray-100 min-h-screen">
     <!-- 导航栏 -->
@@ -61,6 +60,7 @@
         <div class="bg-white rounded-lg shadow-md p-6 mb-4">
             <h3 class="text-xl font-bold mb-3">
                 <i class="fa fa-list-ul mr-2"></i>题库列表
+                <span id="bankCountBadge" class="ml-2 text-sm font-normal text-gray-500 bg-gray-100 px-2 py-1 rounded"></span>
             </h3>
             <div id="questionBankList" class="space-y-3">
                 <!-- 题库列表项将动态生成 -->
@@ -93,9 +93,9 @@
         </div>
     </main>
 
-    <!-- JavaScript 文件 -->
-    <script src="js/storageManager.js"></script>
-    <script src="js/importManager.js"></script>
-    <script src="js/manage.js"></script>
+    <!-- JavaScript 文件 - 使用全新文件名避免缓存问题 -->
+    <script src="js/storageManager.js?v=5"></script>
+    <script src="js/importManager.js?v=5"></script>
+    <script src="js/manage-v2.js"></script>
 </body>
 </html>

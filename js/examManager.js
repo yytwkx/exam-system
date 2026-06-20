@@ -843,24 +843,28 @@ class ExamManager {
             AppManager.backToHome();
         });
         
-        // 键盘快捷键：左右箭头键切换题目
+        // 键盘快捷键：左右箭头键切换题目（选项 radio/checkbox 聚焦时也切换题目，不切换选项）
         document.addEventListener('keydown', (e) => {
-            // 如果正在输入框中输入，不处理快捷键
+            if (e.key !== 'ArrowLeft' && e.key !== 'ArrowRight') return;
+
             const activeElement = document.activeElement;
-            if (activeElement && (activeElement.tagName === 'INPUT' || activeElement.tagName === 'TEXTAREA')) {
+            if (activeElement && activeElement.tagName === 'TEXTAREA') {
                 return;
             }
-            
+            if (activeElement && activeElement.tagName === 'INPUT') {
+                const inputType = activeElement.type;
+                if (inputType !== 'radio' && inputType !== 'checkbox') {
+                    return;
+                }
+            }
+
             // 如果已交卷，不处理快捷键
             if (this.examSubmitted) return;
-            
-            // 左箭头键：上一题
+
             if (e.key === 'ArrowLeft') {
                 e.preventDefault();
                 this.prevQuestion();
-            }
-            // 右箭头键：下一题
-            else if (e.key === 'ArrowRight') {
+            } else if (e.key === 'ArrowRight') {
                 e.preventDefault();
                 this.nextQuestion();
             }
